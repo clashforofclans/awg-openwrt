@@ -1,5 +1,4 @@
 name: Create Release Mediatek Filogic
-#on: [push]
 on:
   workflow_dispatch:
   push:
@@ -9,7 +8,6 @@ on:
 jobs:
   build:
     name: "v${{ matrix.tag }} - ${{ matrix.build_env.pkgarch}} :: ${{ matrix.build_env.target}}/${{ matrix.build_env.subtarget}} build"
-    #runs-on: Linux
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -46,6 +44,13 @@ jobs:
 
           make defconfig
 
+      - name: Set Kernel Hash and Update Configuration
+        run: |
+          # Set the exact kernel hash and config file for the build
+          echo "LINUX_KERNEL_HASH := 9469a6c8c449c47e503c05678ea1559d" >> .config
+          # Make sure kernel configuration matches your platform
+          cp config-6.6.69 target/linux/mediatek/filogic/config-6.6
+
       - name: Make Download and World OpenWRT_v${{ matrix.tag }} ${{ matrix.build_env.target}}/${{ matrix.build_env.subtarget}}
         run: |
           export FORCE_UNSAFE_CONFIGURE=1
@@ -60,13 +65,8 @@ jobs:
           fi
 
           make defconfig
-
-          #make -j $(nproc) V=sc download world
-          echo "Make tools/install"
           make tools/install -i -j $(nproc)
-          echo "Make toolchain/install"
           make toolchain/install -i -j $(nproc)
-          echo "Make Kernel Compile"
           make target/linux/compile -i -j $(nproc)
 
       - name: Make ipks amnezia_${{ github.ref_name }} for original OpenWRT_v${{ matrix.tag }} ${{ matrix.build_env.target}}/${{ matrix.build_env.subtarget}}
